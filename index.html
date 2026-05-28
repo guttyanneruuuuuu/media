@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#fff4d6" />
+  <title>Sky Duel - ハンドジェスチャー対戦</title>
+  <link rel="stylesheet" href="./styles/main.css" />
+</head>
+<body>
+  <!-- ===== タイトル画面 ===== -->
+  <section id="screen-title" class="screen active">
+    <div class="title-bg"></div>
+    <div class="cloud cloud-a"></div>
+    <div class="cloud cloud-b"></div>
+    <div class="cloud cloud-c"></div>
+
+    <div class="title-content">
+      <h1 class="game-title">
+        <span class="title-sun">☀</span>
+        <span>Sky</span>
+        <span class="title-accent">Duel</span>
+      </h1>
+      <p class="subtitle">手と表情で対戦するアクション</p>
+
+      <div class="menu">
+        <button class="btn btn-primary" data-action="goto-ai">
+          <span class="btn-icon">🤖</span>
+          <span class="btn-label">AIと対戦</span>
+        </button>
+        <button class="btn btn-secondary" data-action="goto-room">
+          <span class="btn-icon">👥</span>
+          <span class="btn-label">友達と対戦</span>
+        </button>
+        <button class="btn btn-tertiary" data-action="goto-howto">
+          <span class="btn-icon">📖</span>
+          <span class="btn-label">あそびかた</span>
+        </button>
+      </div>
+
+      <p class="hint">📱 縦画面・カメラ使用許可が必要です</p>
+    </div>
+  </section>
+
+  <!-- ===== 遊び方画面 ===== -->
+  <section id="screen-howto" class="screen">
+    <div class="panel">
+      <h2>あそびかた</h2>
+      <ul class="howto-list">
+        <li><span class="emoji">✋</span><div><b>手を左右に動かす</b><br>キャラが移動します</div></li>
+        <li><span class="emoji">🖐️</span><div><b>パーで前に突き出す</b><br>魔法弾を発射</div></li>
+        <li><span class="emoji">✊</span><div><b>グー</b><br>シールドで防御</div></li>
+        <li><span class="emoji">✌️</span><div><b>チョキ</b><br>エネルギーをチャージ</div></li>
+        <li><span class="emoji">😮</span><div><b>口を開く</b><br>必殺技（チャージ消費）</div></li>
+        <li><span class="emoji">😊</span><div><b>笑顔</b><br>HPを少し回復</div></li>
+      </ul>
+      <p class="howto-tip">先にHPを0にした方の勝利。2分経過時はHPが多い方の勝ち！</p>
+      <button class="btn btn-primary" data-action="back-title">タイトルに戻る</button>
+    </div>
+  </section>
+
+  <!-- ===== ルーム画面（友達対戦） ===== -->
+  <section id="screen-room" class="screen">
+    <div class="panel">
+      <h2>友達と対戦</h2>
+
+      <div class="room-tabs">
+        <button class="tab active" data-tab="create">部屋を作る</button>
+        <button class="tab" data-tab="join">部屋に入る</button>
+      </div>
+
+      <div id="tab-create" class="tab-content active">
+        <p>部屋を作って、コードを友達に共有しよう</p>
+        <button class="btn btn-primary" id="btn-create-room">
+          <span class="btn-icon">✨</span>
+          <span class="btn-label">部屋を作成</span>
+        </button>
+        <div class="room-code-box" id="room-code-box" hidden>
+          <p class="label">あなたのルームコード</p>
+          <div class="room-code" id="room-code-display">------</div>
+          <button class="btn btn-mini" id="btn-copy-code">📋 コピー</button>
+          <button class="btn btn-mini" id="btn-share-code">🔗 共有</button>
+          <p class="room-status" id="room-status">友達の参加を待っています…</p>
+        </div>
+      </div>
+
+      <div id="tab-join" class="tab-content">
+        <p>友達からもらったコードを入力</p>
+        <input type="text" id="input-room-code" placeholder="ルームコード" maxlength="6" autocapitalize="characters" />
+        <button class="btn btn-primary" id="btn-join-room">
+          <span class="btn-icon">🚪</span>
+          <span class="btn-label">参加する</span>
+        </button>
+        <p class="room-status" id="join-status"></p>
+      </div>
+
+      <button class="btn btn-tertiary" data-action="back-title">戻る</button>
+    </div>
+  </section>
+
+  <!-- ===== カメラ準備画面 ===== -->
+  <section id="screen-prepare" class="screen">
+    <div class="panel">
+      <h2>カメラ準備</h2>
+      <p>顔と片手がカメラに映るように構えてください</p>
+      <div class="preview-wrap">
+        <video id="prep-video" playsinline autoplay muted></video>
+        <canvas id="prep-canvas"></canvas>
+        <div class="preview-overlay">
+          <div class="check-item" id="check-hand">✋ 手が見える: <b>未検出</b></div>
+          <div class="check-item" id="check-face">😀 顔が見える: <b>未検出</b></div>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btn-start-game" disabled>
+        <span class="btn-label">準備OK！はじめる</span>
+      </button>
+      <button class="btn btn-tertiary" data-action="back-title">戻る</button>
+    </div>
+  </section>
+
+  <!-- ===== ゲーム画面 ===== -->
+  <section id="screen-game" class="screen">
+    <!-- 上半分: 相手 -->
+    <div class="arena arena-opponent">
+      <div class="hp-bar hp-opponent">
+        <div class="hp-label">
+          <span id="opponent-name">相手</span>
+          <span class="hp-num"><span id="opponent-hp">100</span>/100</span>
+        </div>
+        <div class="hp-track"><div class="hp-fill" id="opponent-hp-fill"></div></div>
+        <div class="energy-track"><div class="energy-fill" id="opponent-energy-fill"></div></div>
+      </div>
+      <canvas id="canvas-opponent" class="arena-canvas"></canvas>
+    </div>
+
+    <!-- 中央: タイマー -->
+    <div class="timer-bar">
+      <div class="timer-time" id="timer-display">2:00</div>
+      <div class="timer-vs">VS</div>
+    </div>
+
+    <!-- 下半分: 自分 -->
+    <div class="arena arena-self">
+      <canvas id="canvas-self" class="arena-canvas"></canvas>
+      <div class="hp-bar hp-self">
+        <div class="hp-label">
+          <span>あなた</span>
+          <span class="hp-num"><span id="self-hp">100</span>/100</span>
+        </div>
+        <div class="hp-track"><div class="hp-fill" id="self-hp-fill"></div></div>
+        <div class="energy-track"><div class="energy-fill" id="self-energy-fill"></div></div>
+      </div>
+    </div>
+
+    <!-- 自分のカメラプレビュー（小） -->
+    <div class="cam-mini">
+      <video id="game-video" playsinline autoplay muted></video>
+      <canvas id="game-cam-canvas"></canvas>
+      <div class="gesture-tag" id="gesture-tag">--</div>
+    </div>
+
+    <!-- ゲーム通知 -->
+    <div class="game-toast" id="game-toast"></div>
+
+    <!-- カウントダウン -->
+    <div class="countdown" id="countdown" hidden></div>
+  </section>
+
+  <!-- ===== 結果画面 ===== -->
+  <section id="screen-result" class="screen">
+    <div class="panel result-panel">
+      <h2 id="result-title">勝利！</h2>
+      <div class="result-emoji" id="result-emoji">🏆</div>
+      <div class="result-stats">
+        <div><span class="stat-label">残HP</span><span class="stat-value" id="stat-hp">--</span></div>
+        <div><span class="stat-label">命中弾</span><span class="stat-value" id="stat-hits">--</span></div>
+        <div><span class="stat-label">必殺技</span><span class="stat-value" id="stat-specials">--</span></div>
+      </div>
+      <button class="btn btn-primary" data-action="rematch">もう一度</button>
+      <button class="btn btn-secondary" data-action="back-title">タイトルへ</button>
+    </div>
+  </section>
+
+  <!-- ===== ローディング ===== -->
+  <div id="loader" class="loader" hidden>
+    <div class="loader-spinner"></div>
+    <p id="loader-text">読み込み中…</p>
+  </div>
+
+  <!-- ===== スクリプト ===== -->
+  <!-- MediaPipe Tasks Vision (ESM via CDN) は main.js 内で動的 import -->
+  <!-- PeerJS for P2P -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script type="module" src="./scripts/main.js"></script>
+</body>
+</html>
