@@ -371,6 +371,7 @@ export class GameEngine {
       this._addSparkle(targetKey, t.x, 0.55, "#ff8f3f");
     }
     t.hp = Math.max(0, t.hp - dmg);
+    t.hurtUntil = performance.now() + 220;
     const attackerKey = targetKey === "self" ? "opp" : "self";
     this.stats[attackerKey].hits += 1;
     this._addSparkle(targetKey, t.x, 0.65, bullet.type === "special" ? "#ff6b88" : "#ff8f3f");
@@ -547,6 +548,7 @@ function drawPlayer(ctx, W, H, player, arenaKey) {
   const px = player.x * W;
   const py = H * 0.72;
   const r = Math.min(W, H) * 0.11;
+  const hurt = player.hurtUntil && performance.now() < player.hurtUntil;
 
   // 影
   ctx.fillStyle = "rgba(60,95,150,0.18)";
@@ -567,10 +569,17 @@ function drawPlayer(ctx, W, H, player, arenaKey) {
   ctx.fill();
 
   // 本体
-  ctx.fillStyle = bodyColor;
+  ctx.fillStyle = hurt ? "#ff6b88" : bodyColor;
   ctx.beginPath();
   ctx.arc(px, py, r, 0, Math.PI * 2);
   ctx.fill();
+  if (hurt) {
+    ctx.strokeStyle = "rgba(255,107,136,0.6)";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.arc(px, py, r + 8, 0, Math.PI * 2);
+    ctx.stroke();
+  }
 
   // ハイライト
   ctx.fillStyle = accentColor;
