@@ -39,6 +39,7 @@ export class GameEngine {
     onMatchEnd,
     onHudUpdate,
     onToast,
+    role = "solo", // "solo" | "host" | "guest"
   }) {
     this.canvasSelf = canvasSelf;
     this.canvasOpp = canvasOpp;
@@ -47,6 +48,8 @@ export class GameEngine {
     this.onMatchEnd = onMatchEnd;
     this.onHudUpdate = onHudUpdate;
     this.onToast = onToast;
+    this.role = role; // ホスト権威モデル
+    this._lastStateSyncAt = 0;
 
     this.players = {
       self: makePlayer("self"),
@@ -177,9 +180,17 @@ export class GameEngine {
       b.age += dt;
     }
 
+    // 当たり判定はホスト権威モードでは host のみが判定する
+    const judgeHits = this.role !== "guest";
     // 当たり判定 (各弾 → 相手アリーナ中央付近の相手キャラ)
     for (const b of this.bullets) {
       if (b.dead) continue;
+      if (!judgeHits) {
+        // ゲスト側はホストから state を受け取るので、弾はビジュアルだけ。
+        // 画面外に出たら消す。
+        if (b.y < -1.2 || b.y > 2.2) b.dead = true;
+        continue;
+      }
       // 弾の所有者の「アリーナ」を出て相手の「アリーナ」に入ったかをy座標で判定
       // 座標系は normalize [0..1] per arena, y は 0=上端 / 1=下端
       // self は下アリーナで撃つ → y が小さくなる方向に飛ぶ → 自分アリーナを出る (y<0) と相手アリーナへ
@@ -203,6 +214,22 @@ export class GameEngine {
       }
     }
     this.bullets = this.bullets.filter((b) => !b.dead);
+
+    // ホスト権威: 定期的にHPを送信
+    if (this.role === "host" && this._netSender) {
+      if (now - this._lastStateSyncAt > 150) {
+        this._lastStateSyncAt = now;
+        this._netSender({
+          type: "state",
+          // 相手から見れば 自分のHP = opp、相手のHP = self
+          // 受信側 applyRemoteAction({type:"state", selfHP, oppHP}) で
+          //   opp.hp = selfHP (送信者から見たself)
+          //   self.hp = oppHP
+          selfHP: this.players.self.hp,
+          oppHP: this.players.opp.hp,
+        });
+      }
+    }
 
     // パーティクル更新
     for (const p of this.particles) {

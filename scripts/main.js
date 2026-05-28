@@ -301,12 +301,16 @@ async function startCountdown() {
   cd.hidden = true;
 
   // ゲームエンジン起動
+  const role = state.mode === "host" ? "host"
+            : state.mode === "guest" ? "guest"
+            : "solo";
   const engine = new GameEngine({
     canvasSelf: $("canvas-self"),
     canvasOpp: $("canvas-opponent"),
     onHudUpdate: updateHud,
     onToast: showToast,
     onMatchEnd: handleMatchEnd,
+    role,
   });
   state.game = engine;
 
