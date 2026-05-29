@@ -182,7 +182,11 @@ async function startPrepare(mode) {
 
   } catch (e) {
     hideLoader();
-    alert("カメラ起動に失敗しました: " + e.message);
+    let msg = "カメラ起動に失敗しました";
+    if (e?.name === "NotAllowedError") msg = "📷 カメラ権限が許可されていません。\nブラウザの設定からカメラを許可してください。";
+    else if (e?.name === "NotFoundError") msg = "📷 カメラが見つかりません。";
+    else if (e?.message) msg += ": " + e.message;
+    alert(msg);
     backToTitle();
   }
 }
